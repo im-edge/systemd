@@ -5,15 +5,22 @@ namespace gipfl\SystemD;
 use Exception;
 use InvalidArgumentException;
 use React\EventLoop\LoopInterface;
+use React\EventLoop\TimerInterface;
 use RuntimeException;
 
 class NotifySystemD
 {
-    /** @var string */
-    protected $path;
+    /** @var LoopInterface */
+    protected $loop;
+
+    /** @var TimerInterface */
+    protected $timer;
 
     /** @var resource */
     protected $socket;
+
+    /** @var string */
+    protected $path;
 
     /** @var string|null */
     protected $status;
@@ -51,13 +58,21 @@ class NotifySystemD
      */
     public function run(LoopInterface $loop)
     {
-        $loop->addPeriodicTimer($this->interval, function () {
+        $this->loop = $loop;
+        $this->timer = $loop->addPeriodicTimer($this->interval, function () {
             try {
                 $this->pingWatchDog();
             } catch (Exception $e) {
                 // Silently ignore errors? What else should we do?
             }
         });
+    }
+
+    public function stop()
+    {
+        if ($this->timer !== null) {
+            $this->loop->cancelTimer($this->timer);
+        }
     }
 
     public static function ifRequired(LoopInterface $loop, $env = null)
@@ -196,5 +211,8 @@ class NotifySystemD
         if (\is_resource($this->socket)) {
             @\socket_close($this->socket);
         }
+        $this->stop();
+
+        unset($this->loop);
     }
 }
