@@ -34,6 +34,9 @@ class NotifySystemD
     /** @var bool */
     protected $ready = false;
 
+    /** @var bool */
+    protected $failed = false;
+
     /**
      * NotifySystemD constructor.
      * @param string $notifySocket
@@ -135,18 +138,24 @@ class NotifySystemD
                 'Error has to be an Exception or an Integer'
             );
         }
-        $params = ['ERRNO' => (string) $errNo];
+        $params = [];
         if ($status !== null) {
             $params['STATUS'] = $status;
             $this->status = $status;
         }
+
+        $params = ['ERRNO' => (string) $errNo];
         $this->send($params);
+        $this->failed = true;
     }
 
     public function setReady($status = null)
     {
         $this->ready = true;
-        $params = ['READY' => '1'];
+        $params = [
+            'READY'   => '1',
+            'MAINPID' => \posix_getpid(),
+        ];
 
         if ($status !== null) {
             $params['STATUS'] = $status;
@@ -158,6 +167,9 @@ class NotifySystemD
 
     protected function send(array $params)
     {
+        if ($this->failed) {
+            throw new RuntimeException('Cannot notify SystemD after failing');
+        }
         $message = $this->buildMessage($params);
         $length = strlen($message);
         $result = @socket_send($this->socket, $message, $length, 0);
