@@ -41,7 +41,7 @@ Changes
 * Log eventual issues when sending Watchdog notifications
 * Allow to extend Watchdog timeout (v236+)
 
-### v0.2.0
+### v0.1.0
 
 * First release
 
