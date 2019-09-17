@@ -19,13 +19,13 @@ class NotifySystemD
     /** @var resource */
     protected $socket;
 
-    /** @var string */
+    /** @var string|null */
     protected $path;
 
     /** @var string|null */
     protected $status;
 
-    /** @var int */
+    /** @var float */
     protected $interval;
 
     /** @var bool */
@@ -100,11 +100,19 @@ class NotifySystemD
         return $notifier;
     }
 
+    /**
+     * Send a notification to the systemd watchdog
+     */
     public function pingWatchDog()
     {
         $this->send(['WATCHDOG' => '1']);
     }
 
+    /**
+     * Set the (visible) service status
+     *
+     * @param $status
+     */
     public function setStatus($status)
     {
         if ($status !== $this->status) {
@@ -165,13 +173,45 @@ class NotifySystemD
         $this->send($params);
     }
 
-    protected function send(array $params)
+    /**
+     * Get the path to the the systemd notification socket
+     *
+     * Usually /run/systemd/notify or similar - or null if not available
+     *
+     * @return string|null
+     */
+    public function getSocketPath()
+    {
+        return $this->path;
+    }
+
+    /**
+     * Our Watchdog interval in seconds
+     *
+     * This is a float value: half of WATCHDOG_USEC if given - otherwise 1 second
+     *
+     * @return float
+     */
+    public function getWatchdogInterval()
+    {
+        return $this->interval;
+    }
+
+    /**
+     * Send custom parameters to systemd
+     *
+     * This is for internal use only, but might be used to test new functionality
+     *
+     * @param array $params
+     * @internal
+     */
+    public function send(array $params)
     {
         if ($this->failed) {
             throw new RuntimeException('Cannot notify SystemD after failing');
         }
         $message = $this->buildMessage($params);
-        $length = strlen($message);
+        $length = \strlen($message);
         $result = @socket_send($this->socket, $message, $length, 0);
         if ($result === false) {
             $error = \socket_last_error($this->socket);
@@ -188,6 +228,12 @@ class NotifySystemD
         }
     }
 
+    /**
+     * Transforms a key/value array into a string like "key1=val1\nkey2=val2"
+     *
+     * @param array $params
+     * @return string
+     */
     protected function buildMessage(array $params)
     {
         $message = '';
@@ -198,6 +244,12 @@ class NotifySystemD
         return $message;
     }
 
+    /**
+     * Connect to the discovered socket
+     *
+     * Will be /run/systemd/notify or similar. No async logic, as this
+     * shouldn't block. If systemd blocks we're dead anyways, so who cares
+     */
     protected function connectToSocket()
     {
         $path = $this->path;
