@@ -65,13 +65,21 @@ class NotifySystemD
     public function run(LoopInterface $loop)
     {
         $this->loop = $loop;
-        $this->timer = $loop->addPeriodicTimer($this->interval, function () {
+        $ping = function () {
             try {
                 $this->pingWatchDog();
             } catch (Exception $e) {
-                // Silently ignore errors? What else should we do?
+                printf(
+                    "<%d>Failed to ping systemd watchdog: %s\n",
+                    LOG_ERR,
+                    $e->getMessage()
+                );
             }
-        });
+        };
+        $loop->futureTick($ping);
+        $this->timer = $loop->addPeriodicTimer($this->interval, $ping);
+
+        return $this;
     }
 
     /**
