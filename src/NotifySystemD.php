@@ -115,7 +115,17 @@ class NotifySystemD
             ->run($loop);
     }
 
-        return $notifier;
+    /**
+     * Extend the Watchdog timeout
+     *
+     * Useful to inform systemd before slow startup/shutdown operations. This
+     * is available since systemd v236. Older versions silently ignore this.
+     *
+     * @param float $seconds
+     */
+    public function extendTimeout($seconds)
+    {
+        $this->send(['EXTEND_TIMEOUT_USEC' => (int) $seconds * 1000000]);
     }
 
     /**
