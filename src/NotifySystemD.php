@@ -37,6 +37,9 @@ class NotifySystemD
     /** @var bool */
     protected $failed = false;
 
+    /** @var string|null The Invocation ID (128bit UUID) if available */
+    protected $invocationId;
+
     /**
      * NotifySystemD constructor.
      * @param string $notifySocket
@@ -71,6 +74,11 @@ class NotifySystemD
         });
     }
 
+    /**
+     * Stop sending watchdog notifications
+     *
+     * Usually there is no need to do so, and the destructor does this anyways
+     */
     public function stop()
     {
         if ($this->timer !== null) {
@@ -94,8 +102,10 @@ class NotifySystemD
             $interval = 1;
         }
 
-        $notifier = new static($env['NOTIFY_SOCKET'], $interval);
-        $notifier->run($loop);
+        return (new static($env['NOTIFY_SOCKET'], $interval))
+            ->eventuallySetInvocationIdFromEnv($env)
+            ->run($loop);
+    }
 
         return $notifier;
     }
@@ -171,6 +181,27 @@ class NotifySystemD
         }
 
         $this->send($params);
+    }
+
+    /**
+     * Returns a 128bit uuid (16 hex characters) Invocation ID if available,
+     * null in case there isn't
+     *
+     * @return string|null
+     */
+    public function getInvocationId()
+    {
+        return $this->invocationId;
+    }
+
+    /**
+     * Whether we got an Invocation ID
+     *
+     * @return bool
+     */
+    public function hasInvocationId()
+    {
+        return $this->invocationId !== null;
     }
 
     /**
@@ -268,6 +299,32 @@ class NotifySystemD
         }
 
         $this->socket = $socket;
+    }
+
+    /**
+     * If INVOCATION_ID is available in the given ENV array: keep it
+     *
+     * Fails in case we do not get an 128bit string
+     *
+     * @param array $env
+     * @return $this
+     */
+    protected function eventuallySetInvocationIdFromEnv(array $env)
+    {
+        $key = 'INVOCATION_ID';
+        if (isset($env[$key])) {
+            if (\strlen($env[$key]) === 32) {
+                $this->invocationId = $env[$key];
+            } else {
+                throw new RuntimeException(sprintf(
+                    'Unsupported %s="%s"',
+                    $key,
+                    $env['$key']
+                ));
+            }
+        }
+
+        return $this;
     }
 
     public function __destruct()
