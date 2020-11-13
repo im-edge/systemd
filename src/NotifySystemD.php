@@ -100,7 +100,7 @@ class NotifySystemD
             $env = $_SERVER;
         }
 
-        if (! isset($env['NOTIFY_SOCKET'])) {
+        if (! systemd::startedThisProcess($env)) {
             return false;
         }
 
