@@ -16,9 +16,6 @@ class NotifySystemD
     /** @var TimerInterface */
     protected $timer;
 
-    /** @var resource */
-    protected $socket;
-
     /** @var string|null */
     protected $path;
 
@@ -40,6 +37,8 @@ class NotifySystemD
     /** @var string|null The Invocation ID (128bit UUID) if available */
     protected $invocationId;
 
+    protected $notificationSocket;
+
     /**
      * NotifySystemD constructor.
      * @param string $notifySocket
@@ -48,13 +47,7 @@ class NotifySystemD
     public function __construct($notifySocket, $intervalSecs = 1)
     {
         $this->interval = $intervalSecs;
-        if (@\file_exists($notifySocket) && \is_writable($notifySocket)) {
-            $this->path = $notifySocket;
-        } else {
-            throw new RuntimeException("Unix Socket '$notifySocket' is not writable");
-        }
-
-        $this->connectToSocket();
+        $this->notificationSocket = new NotificationSocket($notifySocket);
     }
 
     /**
@@ -225,13 +218,13 @@ class NotifySystemD
     /**
      * Get the path to the the systemd notification socket
      *
-     * Usually /run/systemd/notify or similar - or null if not available
+     * Usually /run/systemd/notify or similar
      *
-     * @return string|null
+     * @return string
      */
     public function getSocketPath()
     {
-        return $this->path;
+        return $this->notificationSocket->getPath();
     }
 
     /**
@@ -259,64 +252,8 @@ class NotifySystemD
         if ($this->failed) {
             throw new RuntimeException('Cannot notify SystemD after failing');
         }
-        $message = $this->buildMessage($params);
-        $length = \strlen($message);
-        $result = @socket_send($this->socket, $message, $length, 0);
-        if ($result === false) {
-            $error = \socket_last_error($this->socket);
 
-            throw new RuntimeException(
-                "Failed to send to SystemD: " . \socket_strerror($error),
-                $error
-            );
-        }
-        if ($result !== $length) {
-            throw new RuntimeException(
-                "Wanted to send $length Bytes to SystemD, only $result have been sent"
-            );
-        }
-    }
-
-    /**
-     * Transforms a key/value array into a string like "key1=val1\nkey2=val2"
-     *
-     * @param array $params
-     * @return string
-     */
-    protected function buildMessage(array $params)
-    {
-        $message = '';
-        foreach ($params as $key => $value) {
-            $message .= "$key=$value\n";
-        }
-
-        return $message;
-    }
-
-    /**
-     * Connect to the discovered socket
-     *
-     * Will be /run/systemd/notify or similar. No async logic, as this
-     * shouldn't block. If systemd blocks we're dead anyways, so who cares
-     */
-    protected function connectToSocket()
-    {
-        $path = $this->path;
-        $socket = @\socket_create(AF_UNIX, SOCK_DGRAM, 0);
-        if ($socket === false) {
-            throw new RuntimeException('Unable to create socket');
-        }
-
-        if (! @\socket_connect($socket, $path)) {
-            $error = \socket_last_error($socket);
-
-            throw new RuntimeException(
-                "Unable to connect to unix domain socket $path: " . \socket_strerror($error),
-                $error
-            );
-        }
-
-        $this->socket = $socket;
+        $this->notificationSocket->send($params);
     }
 
     /**
@@ -347,11 +284,9 @@ class NotifySystemD
 
     public function __destruct()
     {
-        if (\is_resource($this->socket)) {
-            @\socket_close($this->socket);
-        }
+        $this->notificationSocket->disconnect();
+        $this->notificationSocket = null;
         $this->stop();
-
         unset($this->loop);
     }
 }
