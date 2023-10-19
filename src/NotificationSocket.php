@@ -11,6 +11,12 @@ class NotificationSocket
     /** @var resource */
     protected $socket;
 
+    /** @var string */
+    protected $path;
+
+    /**
+     * @param string $path
+     */
     public function __construct($path)
     {
         if (@file_exists($path) && is_writable($path)) {
@@ -82,7 +88,7 @@ class NotificationSocket
      * Connect to the discovered socket
      *
      * Will be /run/systemd/notify or similar. No async logic, as this
-     * shouldn't block. If systemd blocks we're dead anyways, so who cares
+     * shouldn't block. If systemd blocks we're dead anyway, so who cares
      */
     protected function connect()
     {
