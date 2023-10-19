@@ -33,6 +33,12 @@ $loop->run();
 Changes
 -------
 
+### v0.4.0
+* added a missing property to fix deprecation notices with PHP 8.2
+
+### v0.3.0
+* Notification socket has been moved to a dedicated class
+
 ### v0.2.0
 
 * Add `has/getInvocationId()
