@@ -1,6 +1,6 @@
 {
-    "name": "gipfl/systemd",
-    "description": "SystemD-related library",
+    "name": "imedge/systemd",
+    "description": "systemd-related library",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -14,13 +14,19 @@
     },
     "autoload": {
         "psr-4": {
-            "gipfl\\SystemD\\": "src"
+            "IMEdge\\systemd\\": "src"
         }
     },
     "require": {
-        "php": ">=5.6.3",
+        "php": ">=8.1",
         "ext-posix": "*",
         "ext-sockets": "*",
-        "react/event-loop": "^1.0"
+        "revolt/event-loop": "^1.0"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10",
+        "phpunit/phpunit": "^10.3",
+        "squizlabs/php_codesniffer": "^3.7",
+        "symplify/easy-coding-standard": "^12.0.8"
     }
 }

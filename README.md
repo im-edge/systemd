@@ -1,5 +1,5 @@
-gipfl\\SystemD
-==========================
+IMEdge\\systemd
+===============
 
 systemd-related library. Currently: just a WatchDog notifier. WatchDog fires
 automatically if required from the environment. You're responsible for calling
@@ -16,22 +16,22 @@ Usage
 ```php
 <?php
 
-use gipfl\SystemD\NotifySystemD;
-use React\EventLoop\Factory as Loop;
+use IMEdge\systemd\systemd;
+use Revolt\EventLoop;
 
-$loop = Loop::create();
-if ($notifier = NotifySystemD::ifRequired($loop)) {
-    $notifier->setReady('My process is ready');
-    $loop->addTimer(10, function () use ($notifier) {
-        $notifier->setStatus('Process status changed');
-    });
-}
-
-$loop->run();
+systemd::notificationSocket()?->setReady('My process is ready');
+EventLoop::delay(10, function () {
+    systemd::notificationSocket()?->setReady('Process status changed');
+})
 ```
 
 Changes
 -------
+
+### v1.0.0
+
+* Changed namespace
+* Refactored completely, it's now PHP 8.1+ only and works with RevoltPHP (AMPHP and ReactPHP)
 
 ### v0.4.0
 * added a missing property to fix deprecation notices with PHP 8.2
@@ -50,13 +50,3 @@ Changes
 ### v0.1.0
 
 * First release
-
-Naming
-------
-
-Yes, we know that it reads `systemd` and not `SystemD` - sorry for hurting your
-feelings. Unfortunately we released software depending on this library before we
-realized that we committed this error. We'll fix it once we move this to ipl or
-another namespace. Right now it isn't possible, as a transition from `systemd`
-to `SystemD` would lead to problems in a world with `composer` and `PHP`, with
-the latter being partially case insensitive.

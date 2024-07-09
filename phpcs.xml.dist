@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <ruleset name="PHP_CodeSniffer">
-    <description>gipfl - PSR2 Coding Standard</description>
+    <description>PSR12 Coding Standard</description>
 
     <file>src/</file>
+    <file>tests/</file>
 
     <arg value="wps"/>
     <arg name="colors"/>
@@ -12,5 +13,5 @@
     <arg name="report-summary"/>
     <arg name="encoding" value="UTF-8"/>
 
-    <rule ref="PSR2"/>
+    <rule ref="PSR12"/>
 </ruleset>
