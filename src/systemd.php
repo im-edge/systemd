@@ -99,7 +99,7 @@ class systemd
     protected static function hasEnv(string $key): bool
     {
         self::$env ??= $_SERVER;
-        return array_key_exists($key, self::$env[$key]);
+        return array_key_exists($key, self::$env);
     }
 
     /**
