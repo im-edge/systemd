@@ -41,15 +41,18 @@ class systemd
         if (self::$notificationSocket === false) {
             return null;
         }
+        if (self::$notificationSocket === null) {
+            $socketPath = self::getEnv(self::ENV_NOTIFY_SOCKET);
+            if ($socketPath === null || ! str_starts_with($socketPath, '/')) {
+                // We support only Unix sockets, no vsock (vsock://) and no abstract namespace socket (@)
+                self::$notificationSocket = false;
+                return null;
+            }
 
-        $socketPath = self::getEnv(self::ENV_NOTIFY_SOCKET);
-        if ($socketPath === null || ! str_starts_with($socketPath, '/')) {
-            // We support only Unix sockets, no vsock (vsock://) and no abstract namespace socket (@)
-            self::$notificationSocket = false;
-            return null;
+            self::$notificationSocket = new NotificationSocket($socketPath);
         }
 
-        return self::$notificationSocket = new NotificationSocket($socketPath);
+        return self::$notificationSocket;
     }
 
     /**
